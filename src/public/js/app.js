@@ -13,12 +13,11 @@ function handleNewRoom(event) {
   const name = event.target.roomname.value;
   event.target.roomname.value = "";
   if (name.length == 0) return;
-  socket.emit("new_room", name);
+  socket.emit("room_new", name);
 }
 
 function handleEnterRoom(name) {
-  event.preventDefault();
-  socket.emit("enter_room", name);
+  socket.emit("room_enter", name);
 }
 
 const Header = () => {
@@ -41,13 +40,14 @@ const NewRoom = () => {
   );
 };
 
-const RoomItem = (name) => {
+const RoomItem = (room) => {
+  console.log(room);
   return (
-    <li key={name} className="room-list__item">
-      <p className="room-list__name">{name}</p>
+    <li key={room.name} className="room-list__item">
+      <p className="room-list__name">{room.name}</p>
       <button
         className="room-list__enter"
-        onClick={() => handleEnterRoom(name)}
+        onClick={() => handleEnterRoom(room.name)}
       >
         입장하기
       </button>
@@ -57,7 +57,6 @@ const RoomItem = (name) => {
 
 const RoomList = () => {
   const [roomList, setRoomList] = React.useState([]);
-  const listItems = roomList.map(RoomItem);
 
   socket.on("room_change", (list) => {
     setRoomList(list);
@@ -66,7 +65,7 @@ const RoomList = () => {
   return (
     <div className="room-list">
       <h3>방 목록</h3>
-      <ul className="room-list__container">{listItems}</ul>
+      <ul className="room-list__container">{roomList.map(RoomItem)}</ul>
     </div>
   );
 };
@@ -81,4 +80,41 @@ const WaitingRoom = () => {
   );
 };
 
-ReactDOM.render(<WaitingRoom />, document.getElementById("root"));
+const GamingRoom = () => {
+  return (
+    <>
+      <Header />
+      <button
+        onClick={() => {
+          socket.emit("room_leave");
+        }}
+      >
+        방 나가기
+      </button>
+    </>
+  );
+};
+
+const MainPage = (state) => {
+  console.log(state.gaming);
+  if (!state.gaming) {
+    return <WaitingRoom />;
+  } else {
+    return <GamingRoom />;
+  }
+};
+
+const App = () => {
+  const [gaming, setGaming] = React.useState(false);
+  socket.on("room_enter", () => {
+    setGaming(true);
+  });
+
+  socket.on("room_leave", () => {
+    setGaming(false);
+  });
+
+  return <MainPage gaming={gaming} />;
+};
+
+ReactDOM.render(<App />, document.getElementById("root"));
