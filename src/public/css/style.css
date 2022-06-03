@@ -1,3 +1,10 @@
+/* @import "./reset.css"; */
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
 li {
   list-style: none;
 }
@@ -15,8 +22,43 @@ body {
   max-width: 800px;
 }
 
+.title {
+  margin-top: 20px;
+}
+
+.newroom {
+  margin-top: 20px;
+}
+
+.newroom__form {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.newroom__input {
+  flex-grow: 1;
+  margin-right: 10px;
+  margin-bottom: 0px;
+  height: 50px;
+}
+
+.newroom__submit {
+  margin: 10px 0px 10px 10px;
+  padding: 0px;
+  width: 140px;
+  height: 50px;
+  font-size: 20px;
+}
+
 .room-list {
+  margin-top: 20px;
   padding: 20px;
+}
+
+.room-list__container {
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
   justify-content: start;
@@ -25,11 +67,26 @@ body {
 
 .room-list__item {
   width: 100%;
+  margin-top: 15px;
+  padding: 5px;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid gray;
   border-radius: 10px;
-  box-shadow: 3px;
+  box-shadow: 0px 3px 3px 2px #ccc;
+}
+
+.room-list__name {
+  margin-left: 20px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.room-list__enter {
+  margin: 10px;
+  padding: 0px;
+  width: 180px;
+  height: 50px;
+  font-size: 20px;
 }
