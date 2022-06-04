@@ -8,23 +8,19 @@ socket.on("error", (message) => {
   alert(message);
 });
 
-function handleNewRoom(event) {
-  event.preventDefault();
-  const name = event.target.roomname.value;
-  event.target.roomname.value = "";
-  if (name.length == 0) return;
-  socket.emit("room_new", name);
-}
-
-function handleEnterRoom(name) {
-  socket.emit("room_enter", name);
-}
-
 const Header = () => {
   return <h1 className="title">Socket Omok</h1>;
 };
 
 const NewRoom = () => {
+  const handleNewRoom = (event) => {
+    event.preventDefault();
+    const name = event.target.roomname.value;
+    event.target.roomname.value = "";
+    if (name.length == 0) return;
+    socket.emit("room_new", name);
+  };
+
   return (
     <div className="newroom">
       <form className="newroom__form" onSubmit={handleNewRoom}>
@@ -41,14 +37,14 @@ const NewRoom = () => {
 };
 
 const RoomItem = (room) => {
-  console.log(room);
+  const handleEnterRoom = () => {
+    socket.emit("room_enter", room.name);
+  };
+
   return (
     <li key={room.name} className="room-list__item">
       <p className="room-list__name">{room.name}</p>
-      <button
-        className="room-list__enter"
-        onClick={() => handleEnterRoom(room.name)}
-      >
+      <button className="room-list__enter" onClick={handleEnterRoom}>
         입장하기
       </button>
     </li>
@@ -73,7 +69,6 @@ const RoomList = () => {
 const WaitingRoom = () => {
   return (
     <>
-      <Header />
       <NewRoom />
       <RoomList />
     </>
@@ -83,7 +78,6 @@ const WaitingRoom = () => {
 const GamingRoom = () => {
   return (
     <>
-      <Header />
       <button
         onClick={() => {
           socket.emit("room_leave");
@@ -93,15 +87,6 @@ const GamingRoom = () => {
       </button>
     </>
   );
-};
-
-const MainPage = (state) => {
-  console.log(state.gaming);
-  if (!state.gaming) {
-    return <WaitingRoom />;
-  } else {
-    return <GamingRoom />;
-  }
 };
 
 const App = () => {
@@ -114,7 +99,12 @@ const App = () => {
     setGaming(false);
   });
 
-  return <MainPage gaming={gaming} />;
+  return (
+    <>
+      <Header />
+      {gaming ? <GamingRoom /> : <WaitingRoom />}
+    </>
+  );
 };
 
 ReactDOM.render(<App />, document.getElementById("root"));
