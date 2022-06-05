@@ -21,6 +21,14 @@ const wsServer = new Server(httpServer);
 
 let publicRoom = [];
 
+function getJoinedRoomName(socket) {
+  return Array.from(socket.rooms)[1];
+}
+
+function getPublicRoom(name) {
+  return publicRoom.find((room) => room.name == name);
+}
+
 //이름이 name인 방에 속한 Socket 개수 반환
 function countRoom(name) {
   return wsServer.sockets.adapter.rooms.get(name).size;
@@ -35,25 +43,60 @@ function checkDuplicateRoomName(name) {
   }
 }
 
-function leaveRoom(socket, name) {
+function emitPlayerChange(room) {
+  wsServer.in(room.name).emit("player_change", {
+    blackPlayer: room.blackPlayer,
+    whitePlayer: room.whitePlayer,
+  });
+}
+
+function enterRoom(socket, name) {
+  const room = getPublicRoom(name);
+  console.log(`Socket ${socket.id} is entering room ${name}.`);
+
+  if (room === undefined) {
+    socket.emit("error", "정상적인 방이 아닙니다.");
+    return;
+  }
+
+  socket.join(name);
+  socket.emit("room_enter", room);
+  wsServer.to(name).emit("message", `${socket.id} 님이 입장하셨습니다.`);
+}
+
+function leaveRoom(socket) {
+  const name = getJoinedRoomName(socket);
+
   console.log(`Socket ${socket.id} is leaving room ${name}.`);
 
   if (name != undefined) {
     //현재 Disconnect 하는 Socket이 해당 방의 마지막 소켓일 경우 방 제거
-    console.log(countRoom(name));
     if (countRoom(name) == 1) {
       console.log(`Remove room ${name}`);
       publicRoom = publicRoom.filter((value) => value.name != name);
-      wsServer.sockets.emit("room_change", publicRoom);
+      wsServer.sockets.emit("room_list", publicRoom);
+    } else {
+      const room = getPublicRoom(name);
+      if (room.blackPlayer === socket.id) {
+        room.blackPlayer = "";
+        emitPlayerChange(room);
+      } else if (room.whitePlayer === socket.id) {
+        room.whitePlayer = "";
+        emitPlayerChange(room);
+      }
     }
+    socket.leave(name);
   }
-
-  socket.leave(name);
 }
 
 wsServer.on("connection", (socket) => {
   socket.onAny((event) => {
     console.log(`Socket event: ${event}`);
+  });
+
+  //방 목록 반환
+  socket.on("room_list", () => {
+    socket.emit("room_list", publicRoom);
   });
 
   //방 만들기
@@ -84,21 +127,15 @@ wsServer.on("connection", (socket) => {
     };
 
     roomInfo.name = name;
-    roomInfo.blackPlayer = socket.id;
 
     publicRoom.push(roomInfo);
-    wsServer.sockets.emit("room_change", publicRoom);
+    wsServer.sockets.emit("room_list", publicRoom);
 
-    socket.join(name);
-    socket.emit("room_enter", name);
-
-    console.log(publicRoom);
+    enterRoom(socket, name);
   });
 
   //기존 방 참가
   socket.on("room_enter", (name) => {
-    console.log(`Socket ${socket.id} is entering room ${name}.`);
-
     if (socket.rooms.size > 1) {
       console.log(`socket ${socket.id} is already in room.`);
       console.log(socket.rooms);
@@ -106,27 +143,46 @@ wsServer.on("connection", (socket) => {
       return;
     }
 
-    socket.join(name);
-    socket.emit("room_enter", name);
+    enterRoom(socket, name);
   });
 
   socket.on("room_leave", () => {
-    const name = Array.from(socket.rooms)[1];
-    leaveRoom(socket, name);
+    leaveRoom(socket);
     socket.emit("room_leave");
-    socket.emit("room_change", publicRoom);
+    // setTimeout(function () {
+    //   console.log("Blah blah blah blah extra-blah");
+    // }, 3000);
+  });
+
+  socket.on("player_change", (color) => {
+    const roomName = getJoinedRoomName(socket);
+    const room = getPublicRoom(roomName);
+
+    if (color === "black") {
+      if (room.blackPlayer !== "") {
+        socket.emit("error", "다른 플레이어가 참가중입니다.");
+        return;
+      } else {
+        if (room.whitePlayer === socket.id) room.whitePlayer = "";
+        room.blackPlayer = socket.id;
+      }
+    } else if (color === "white") {
+      if (room.whitePlayer !== "") {
+        socket.emit("error", "다른 플레이어가 참가중입니다.");
+        return;
+      } else {
+        if (room.blackPlayer === socket.id) room.blackPlayer = "";
+        room.whitePlayer = socket.id;
+      }
+    }
+
+    emitPlayerChange(room);
   });
 
   socket.on("disconnecting", () => {
     console.log(`Socket ${socket.id} is disconnecting.`);
-    socket.rooms.forEach((name) => {
-      if (name == socket.id) return;
-      leaveRoom(socket, name);
-    });
+    leaveRoom(socket);
   });
-
-  //최초 방 리스트 불러오기
-  socket.emit("room_change", publicRoom);
 });
 
 httpServer.listen(port, () => {
