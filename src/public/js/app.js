@@ -97,7 +97,6 @@ const BOARD_SPACE = 5.14; //%
 //공백: 3.62%
 const stone = ({ type, x, y }) => {
   //console.log(`${white} (${x},${y})`);
-  console.log(type);
   let material = "";
   type.forEach((m) => {
     switch (m) {
@@ -183,18 +182,15 @@ const CoordSelectArea = ({
 
   const onMouseLeave = () => {
     if (isMobile) return;
-    console.log("MouseLeave");
     onBoardLeave();
   };
 
   const onMouseClick = () => {
     if (isMobile) return;
-    console.log("MouseClick");
     onBoardSelect();
   };
 
   const onTouchStart = (event) => {
-    console.log("TouchStart");
     if (!isMobile) return;
     onBoardEnter();
     onBoardMove(getCoord(event));
@@ -207,7 +203,6 @@ const CoordSelectArea = ({
 
   const onTouchEnd = (event) => {
     if (!isMobile) return;
-    console.log("TouchEnd");
     onBoardLeave();
     onBoardSelect();
   };
@@ -238,12 +233,10 @@ const OmokBoard = ({ takes }) => {
   }, []);
 
   const handleBoardEnter = () => {
-    console.log("BoardEnter");
     setInBoard(true);
   };
 
   const handleBoardLeave = () => {
-    console.log("BoardLeave");
     setInBoard(false);
   };
 
