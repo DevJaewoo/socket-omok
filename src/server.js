@@ -93,9 +93,22 @@ function leaveRoom(socket) {
         room.whitePlayer = "";
         emitPlayerChange(room);
       }
+
+      wsServer.to(name).emit("message", `${socket.id} 님이 퇴장하셨습니다.`);
     }
     socket.leave(name);
   }
+}
+
+//오목 완성 판별
+function checkOmokCompleted(coord, takes) {
+  //(0, 1), (1, 1), (1, 0), (1, -1)
+  const offset = [
+    { x: 1, y: 0 }, //가로
+    { x: 1, y: 1 }, //대각선1
+    { x: 0, y: 1 }, //세로
+    { x: -1, y: 1 }, //대각선2
+  ];
 }
 
 wsServer.on("connection", (socket) => {
@@ -189,6 +202,11 @@ wsServer.on("connection", (socket) => {
     const name = getJoinedRoomName(socket);
     const room = getPublicRoom(name);
 
+    if (room === undefined) {
+      console.log(`Room ${name} is not existing.`);
+      return;
+    }
+
     if (room.takes.length % 2 == 0) {
       //흑돌
       if (room.blackPlayer !== socket.id) {
@@ -201,6 +219,14 @@ wsServer.on("connection", (socket) => {
         socket.emit("error", "백돌 플레이어가 아닙니다.");
         return;
       }
+    }
+
+    if (
+      findSocketByID(room.blackPlayer) === undefined ||
+      findSocketByID(room.whitePlayer) === undefined
+    ) {
+      socket.emit("error", "상대가 존재하지 않습니다.");
+      return;
     }
 
     if (

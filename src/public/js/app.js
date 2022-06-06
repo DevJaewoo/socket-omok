@@ -336,9 +336,8 @@ const GamingRoom = ({ publicRoom }) => {
 
     socket.on("player_selected", (coord) => {
       console.log(`player_selected [${coord.x},${coord.y}]`);
-      takes.push(coord);
-      const t = [...takes];
-      setTakes(t);
+      console.log(takes);
+      setTakes((t) => [...t, coord]);
     });
   }, []);
 
