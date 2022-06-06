@@ -95,14 +95,32 @@ const BOARD_SPACE = 5.14; //%
 //크기: 5%
 //칸: 5.14%
 //공백: 3.62%
-const stone = ({ white, x, y }) => {
+const stone = ({ type, x, y }) => {
   //console.log(`${white} (${x},${y})`);
+  console.log(type);
+  let material = "";
+  type.forEach((m) => {
+    switch (m) {
+      case "black":
+        material += " omokboard__stone--black";
+        break;
+      case "white":
+        material += " omokboard__stone--white";
+        break;
+      case "hint":
+        material += " omokboard__stone--hint";
+        break;
+      case "prev":
+        material += " omokboard__stone--prev";
+        break;
+    }
+  });
+
   return (
     <div
-      className="omokboard__stone"
+      className={`omokboard__stone ${material}`}
       key={`${x}${y}`}
       style={{
-        backgroundColor: white ? "white" : "black",
         left: `${x * BOARD_SPACE + BOARD_OFFSET}%`,
         top: `${y * BOARD_SPACE + BOARD_OFFSET}%`,
       }}
@@ -250,10 +268,25 @@ const OmokBoard = ({ takes }) => {
         />
       ) : null}
       {takes.map((takes, index) => (
-        <MemoriedStone white={index % 2 == 1} x={takes.x} y={takes.y} />
+        <MemoriedStone
+          type={[index % 2 === 0 ? "black" : "white"]}
+          x={takes.x}
+          y={takes.y}
+        />
       ))}
+      {takes.length > 0 ? (
+        <MemoriedStone
+          type={["prev"]}
+          x={takes[takes.length - 1].x}
+          y={takes[takes.length - 1].y}
+        />
+      ) : null}
       {myTurn && inBoard ? (
-        <MemoriedStone white={takes.length % 2 == 1} x={coord.x} y={coord.y} />
+        <MemoriedStone
+          type={[takes.length % 2 == 0 ? "black" : "white", "hint"]}
+          x={coord.x}
+          y={coord.y}
+        />
       ) : null}
     </div>
   );
