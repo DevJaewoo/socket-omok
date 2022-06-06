@@ -293,10 +293,27 @@ const OmokBoard = ({ takes }) => {
 };
 
 const GamePanel = ({ roomname, blackPlayer, whitePlayer }) => {
+  const [message, setMessage] = React.useState([]);
+
+  React.useEffect(() => {
+    socket.on("message", (msg) => {
+      setMessage((value) => [...value, msg]);
+    });
+  }, []);
+
   const Player = ({ name, onClick }) => {
     return (
       <>
         {name !== "" ? <p>{name}</p> : <button onClick={onClick}>참가</button>}
+      </>
+    );
+  };
+
+  const MessageLine = (msg) => {
+    return (
+      <>
+        {msg}
+        <br />
       </>
     );
   };
@@ -321,6 +338,9 @@ const GamePanel = ({ roomname, blackPlayer, whitePlayer }) => {
           <h4>White</h4>
           <Player name={whitePlayer} onClick={whitePlayerCallback} />
         </div>
+      </div>
+      <div>
+        <p className="game-panel__message">{message.map(MessageLine)}</p>
       </div>
     </div>
   );

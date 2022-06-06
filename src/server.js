@@ -109,6 +109,34 @@ function checkOmokCompleted(coord, takes) {
     { x: 0, y: 1 }, //세로
     { x: -1, y: 1 }, //대각선2
   ];
+
+  return offset.some((dir) => {
+    let streak = 1;
+
+    //정방향
+    for (
+      let x = coord.x + dir.x, y = coord.y + dir.y;
+      x > 0 && x < 19 && y > 0 && y < 19;
+      x += dir.x, y += dir.y
+    ) {
+      if (takes.some((t) => t.x == x && t.y == y)) streak++;
+      else break;
+    }
+
+    //반대방향
+    for (
+      let x = coord.x - dir.x, y = coord.y - dir.y;
+      x > 0 && x < 19 && y > 0 && y < 19;
+      x -= dir.x, y -= dir.y
+    ) {
+      if (takes.some((t) => t.x == x && t.y == y)) streak++;
+      else break;
+    }
+
+    if (streak === 5) {
+      return true;
+    }
+  });
 }
 
 wsServer.on("connection", (socket) => {
@@ -239,6 +267,13 @@ wsServer.on("connection", (socket) => {
 
     room.takes.push(coord);
     wsServer.in(name).emit("player_selected", coord);
+
+    if (checkOmokCompleted(coord, room.takes)) {
+      console.log("Omok completed!");
+      wsServer.in(name).emit("game_end", `${socket.id}님이 승리하셨습니다!`);
+      room.takes = [];
+      return;
+    }
 
     if (room.takes.length % 2 == 0) {
       findSocketByID(room.blackPlayer).emit("player_select");
