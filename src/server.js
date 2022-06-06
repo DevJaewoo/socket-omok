@@ -233,6 +233,7 @@ wsServer.on("connection", (socket) => {
       room.takes.find((c) => c.x === coord.x && c.y === coord.y) !== undefined
     ) {
       socket.emit("error", "이미 다른 돌이 위치하고 있습니다.");
+      socket.emit("player_select");
       return;
     }
 

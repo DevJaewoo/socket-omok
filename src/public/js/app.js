@@ -230,6 +230,10 @@ const OmokBoard = ({ takes }) => {
     socket.on("player_select", () => {
       setMyTurn(true);
     });
+
+    socket.on("player_change", () => {
+      setMyTurn(false);
+    });
   }, []);
 
   const handleBoardEnter = () => {
@@ -241,7 +245,10 @@ const OmokBoard = ({ takes }) => {
   };
 
   const handleBoardMove = (coord) => {
-    setCoord(coord);
+    //이미 돌이 존재하면 건너뜀
+    if (takes.find((c) => c.x === coord.x && c.y === coord.y) === undefined) {
+      setCoord(coord);
+    }
   };
 
   const handleBoardSelect = () => {
