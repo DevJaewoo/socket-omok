@@ -304,9 +304,15 @@ const GamePanel = ({ roomname, blackPlayer, whitePlayer }) => {
 
   const Player = ({ name, onClick }) => {
     return (
-      <>
-        {name !== "" ? <p>{name}</p> : <button onClick={onClick}>참가</button>}
-      </>
+      <div className="game-panel__playerinfo">
+        {name !== "" ? (
+          <p className="game-panel__playername">{name}</p>
+        ) : (
+          <button className="game-panel__playerselect" onClick={onClick}>
+            참가
+          </button>
+        )}
+      </div>
     );
   };
 
@@ -329,25 +335,35 @@ const GamePanel = ({ roomname, blackPlayer, whitePlayer }) => {
 
   return (
     <div className="game-panel">
-      <h3 className="game-panel__title">{roomname}</h3>
-      <div className="game-panel__player">
-        <div className="game-panel__blackplayer">
-          <h4>Black</h4>
-          <Player name={blackPlayer} onClick={blackPlayerCallback} />
+      <div className="game-panel__main">
+        <h3 className="game-panel__title">{roomname}</h3>
+        <div className="game-panel__players">
+          <div className="game-panel__player">
+            <h4 className="game-panel__playercolor game-panel__playercolor--black">
+              Black
+            </h4>
+            <Player name={blackPlayer} onClick={blackPlayerCallback} />
+          </div>
+          <div className="game-panel__player">
+            <h4 className="game-panel__playercolor game-panel__playercolor--white">
+              White
+            </h4>
+            <Player name={whitePlayer} onClick={whitePlayerCallback} />
+          </div>
         </div>
-        <div className="game-panel__blackplayer">
-          <h4>White</h4>
-          <Player name={whitePlayer} onClick={whitePlayerCallback} />
+        <div className="game-panel__message">
+          <p>{message.map(MessageLine)}</p>
         </div>
       </div>
-      <div>
-        <p className="game-panel__message">{message.map(MessageLine)}</p>
-      </div>
-      <div className="game-panel__button">
-        <button onClick={() => socket.emit("player_change", "spectator")}>
+      <div className="game-panel__buttons">
+        <button
+          className="game-panel__button"
+          onClick={() => socket.emit("player_change", "spectator")}
+        >
           관전하기
         </button>
         <button
+          className="game-panel__button"
           onClick={() => {
             socket.emit("room_leave");
           }}
@@ -371,7 +387,6 @@ const GamingRoom = ({ publicRoom }) => {
 
   const onGameEnd = () => {
     setWinner("");
-    setTakes([]);
   };
 
   const GameEndScreen = ({ winner }) => {
@@ -392,7 +407,9 @@ const GamingRoom = ({ publicRoom }) => {
     socket.on("player_change", ({ blackPlayer, whitePlayer }) => {
       setBlackPlayer(blackPlayer);
       setWhitePlayer(whitePlayer);
-      setTakes([]);
+      if (blackPlayer !== "" && whitePlayer !== "") {
+        setTakes([]);
+      }
     });
 
     socket.on("player_selected", (coord) => {

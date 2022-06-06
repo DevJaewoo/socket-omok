@@ -48,13 +48,13 @@ function checkDuplicateRoomName(name) {
 }
 
 function emitPlayerChange(room) {
-  room.takes = [];
   wsServer.in(room.name).emit("player_change", {
     blackPlayer: room.blackPlayer,
     whitePlayer: room.whitePlayer,
   });
 
   if (room.blackPlayer !== "" && room.whitePlayer !== "") {
+    room.takes = [];
     findSocketByID(room.blackPlayer).emit("player_select");
   }
 }
@@ -112,6 +112,7 @@ function checkOmokCompleted(coord, takes) {
 
   return offset.some((dir) => {
     let streak = 1;
+    const type = (takes.length - 1) % 2;
 
     //정방향
     for (
@@ -119,7 +120,8 @@ function checkOmokCompleted(coord, takes) {
       x > 0 && x < 19 && y > 0 && y < 19;
       x += dir.x, y += dir.y
     ) {
-      if (takes.some((t) => t.x == x && t.y == y)) streak++;
+      if (takes.some((t, index) => t.x == x && t.y == y && index % 2 == type))
+        streak++;
       else break;
     }
 
@@ -129,7 +131,8 @@ function checkOmokCompleted(coord, takes) {
       x > 0 && x < 19 && y > 0 && y < 19;
       x -= dir.x, y -= dir.y
     ) {
-      if (takes.some((t) => t.x == x && t.y == y)) streak++;
+      if (takes.some((t, index) => t.x == x && t.y == y && index % 2 == type))
+        streak++;
       else break;
     }
 
@@ -284,7 +287,6 @@ wsServer.on("connection", (socket) => {
       wsServer.in(name).emit("message", `${socket.id}님이 승리하셨습니다!`);
       room.blackPlayer = "";
       room.whitePlayer = "";
-      room.takes = [];
       emitPlayerChange(room);
       return;
     }
@@ -295,6 +297,8 @@ wsServer.on("connection", (socket) => {
       findSocketByID(room.blackPlayer).emit("player_select");
     }
   });
+
+  socket.on("player_ready", () => {});
 
   socket.on("disconnecting", () => {
     console.log(`Socket ${socket.id} is disconnecting.`);
