@@ -243,7 +243,9 @@ wsServer.on("connection", (socket) => {
       return;
     }
 
-    if (room.takes.length % 2 == 0) {
+    const isBlackTurn = room.takes.length % 2 == 0;
+
+    if (isBlackTurn) {
       //흑돌
       if (room.blackPlayer !== socket.id) {
         socket.emit("error", "흑돌 플레이어가 아닙니다.");
@@ -278,15 +280,19 @@ wsServer.on("connection", (socket) => {
 
     if (checkOmokCompleted(coord, room.takes)) {
       console.log("Omok completed!");
-      wsServer.in(name).emit("game_end", `${socket.id}님이 승리하셨습니다!`);
+      wsServer.in(name).emit("game_end", isBlackTurn ? "black" : "white");
+      wsServer.in(name).emit("message", `${socket.id}님이 승리하셨습니다!`);
+      room.blackPlayer = "";
+      room.whitePlayer = "";
       room.takes = [];
+      emitPlayerChange(room);
       return;
     }
 
-    if (room.takes.length % 2 == 0) {
-      findSocketByID(room.blackPlayer).emit("player_select");
-    } else {
+    if (isBlackTurn) {
       findSocketByID(room.whitePlayer).emit("player_select");
+    } else {
+      findSocketByID(room.blackPlayer).emit("player_select");
     }
   });
 

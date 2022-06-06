@@ -225,6 +225,7 @@ const OmokBoard = ({ takes }) => {
   const [inBoard, setInBoard] = React.useState(false);
   const [myTurn, setMyTurn] = React.useState(false);
   const [coord, setCoord] = React.useState({});
+  const [isGameEnd, setGameEnd] = React.useState(false);
 
   React.useState(() => {
     socket.on("player_select", () => {
@@ -342,7 +343,7 @@ const GamePanel = ({ roomname, blackPlayer, whitePlayer }) => {
       <div>
         <p className="game-panel__message">{message.map(MessageLine)}</p>
       </div>
-      <div class="game-panel__button">
+      <div className="game-panel__button">
         <button onClick={() => socket.emit("player_change", "spectator")}>
           관전하기
         </button>
@@ -364,7 +365,28 @@ const GamingRoom = ({ publicRoom }) => {
   const [whitePlayer, setWhitePlayer] = React.useState(publicRoom.whitePlayer);
   const [takes, setTakes] = React.useState(publicRoom.takes);
 
+  const [winner, setWinner] = React.useState("");
+
   console.log(publicRoom);
+
+  const onGameEnd = () => {
+    setWinner("");
+    setTakes([]);
+  };
+
+  const GameEndScreen = ({ winner }) => {
+    const text = `${winner === "black" ? "흑돌" : "백돌"} 승리!`;
+    return (
+      <div className="endscreen">
+        <div className="endscreen__main">
+          <h3 className="endscreen__text">{text}</h3>
+          <button className="endscreen__button" onClick={onGameEnd}>
+            확인
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   React.useEffect(() => {
     socket.on("player_change", ({ blackPlayer, whitePlayer }) => {
@@ -378,6 +400,10 @@ const GamingRoom = ({ publicRoom }) => {
       console.log(takes);
       setTakes((t) => [...t, coord]);
     });
+
+    socket.on("game_end", (winner) => {
+      setWinner(winner);
+    });
   }, []);
 
   return (
@@ -388,6 +414,7 @@ const GamingRoom = ({ publicRoom }) => {
         blackPlayer={blackPlayer}
         whitePlayer={whitePlayer}
       />
+      {winner !== "" ? <GameEndScreen winner={winner} /> : null}
     </div>
   );
 };
