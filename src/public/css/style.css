@@ -14,7 +14,6 @@ body {
   flex-direction: column;
   justify-content: start;
   align-items: center;
-  min-width: 540px;
 }
 
 #root {
@@ -55,6 +54,7 @@ body {
 .newroom__input {
   flex-grow: 1;
   margin: 5px 10px 5px 5px;
+  min-width: 0px;
   height: 50px;
 }
 
@@ -124,9 +124,23 @@ body {
   box-shadow: 0px 0px 5px 0px gray;
 }
 
+.omokboard__coord {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  touch-action: none;
+}
+
 @media screen and (orientation: portrait) {
+  body {
+    width: 100%;
+  }
+
   .omokboard {
-    width: 70vw;
-    height: 70vw;
+    width: 90vw;
+    height: 90vw;
   }
 }

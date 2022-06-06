@@ -29,6 +29,10 @@ function getPublicRoom(name) {
   return publicRoom.find((room) => room.name == name);
 }
 
+function findSocketByID(id) {
+  return wsServer.sockets.sockets.get(id);
+}
+
 //이름이 name인 방에 속한 Socket 개수 반환
 function countRoom(name) {
   return wsServer.sockets.adapter.rooms.get(name).size;
@@ -44,10 +48,15 @@ function checkDuplicateRoomName(name) {
 }
 
 function emitPlayerChange(room) {
+  room.takes = [];
   wsServer.in(room.name).emit("player_change", {
     blackPlayer: room.blackPlayer,
     whitePlayer: room.whitePlayer,
   });
+
+  if (room.blackPlayer !== "" && room.whitePlayer !== "") {
+    findSocketByID(room.blackPlayer).emit("player_select");
+  }
 }
 
 function enterRoom(socket, name) {
@@ -149,9 +158,6 @@ wsServer.on("connection", (socket) => {
   socket.on("room_leave", () => {
     leaveRoom(socket);
     socket.emit("room_leave");
-    // setTimeout(function () {
-    //   console.log("Blah blah blah blah extra-blah");
-    // }, 3000);
   });
 
   socket.on("player_change", (color) => {
@@ -177,6 +183,41 @@ wsServer.on("connection", (socket) => {
     }
 
     emitPlayerChange(room);
+  });
+
+  socket.on("player_selected", (coord) => {
+    const name = getJoinedRoomName(socket);
+    const room = getPublicRoom(name);
+
+    if (room.takes.length % 2 == 0) {
+      //흑돌
+      if (room.blackPlayer !== socket.id) {
+        socket.emit("error", "흑돌 플레이어가 아닙니다.");
+        return;
+      }
+    } else {
+      //백돌
+      if (room.whitePlayer !== socket.id) {
+        socket.emit("error", "백돌 플레이어가 아닙니다.");
+        return;
+      }
+    }
+
+    if (
+      room.takes.find((c) => c.x === coord.x && c.y === coord.y) !== undefined
+    ) {
+      socket.emit("error", "이미 다른 돌이 위치하고 있습니다.");
+      return;
+    }
+
+    room.takes.push(coord);
+    wsServer.in(name).emit("player_selected", coord);
+
+    if (room.takes.length % 2 == 0) {
+      findSocketByID(room.blackPlayer).emit("player_select");
+    } else {
+      findSocketByID(room.whitePlayer).emit("player_select");
+    }
   });
 
   socket.on("disconnecting", () => {

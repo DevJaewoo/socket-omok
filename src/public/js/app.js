@@ -1,5 +1,12 @@
 const socket = io();
 
+function Mobile() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  );
+}
+const isMobile = Mobile();
+
 socket.onAny((event) => {
   console.log(`Socket event: ${event}`);
 });
@@ -83,20 +90,21 @@ const WaitingRoom = () => {
 };
 
 ////////////////////////////////////////////////////////////////////////
-
+const BOARD_OFFSET = 3.62; //%
+const BOARD_SPACE = 5.14; //%
 //크기: 5%
-//칸: 5.29%
+//칸: 5.14%
 //공백: 3.62%
 const stone = ({ white, x, y }) => {
-  console.log(`${white} (${x},${y})`);
+  //console.log(`${white} (${x},${y})`);
   return (
     <div
       className="omokboard__stone"
       key={`${x}${y}`}
       style={{
         backgroundColor: white ? "white" : "black",
-        left: `${x * 5.14 + 3.62}%`,
-        top: `${y * 5.14 + 3.62}%`,
+        left: `${x * BOARD_SPACE + BOARD_OFFSET}%`,
+        top: `${y * BOARD_SPACE + BOARD_OFFSET}%`,
       }}
     ></div>
   );
@@ -104,12 +112,149 @@ const stone = ({ white, x, y }) => {
 
 const MemoriedStone = React.memo(stone);
 
+const CoordSelectArea = ({
+  onBoardEnter,
+  onBoardMove,
+  onBoardLeave,
+  onBoardSelect,
+}) => {
+  function getCoord(event) {
+    let coordX = 0;
+    let coordY = 0;
+
+    if (!isMobile) {
+      const percentX =
+        (event.nativeEvent.offsetX * 100.0) / event.target.clientWidth;
+      const percentY =
+        (event.nativeEvent.offsetY * 100.0) / event.target.clientHeight;
+
+      coordX = parseInt((percentX - BOARD_OFFSET) / BOARD_SPACE + 0.5);
+      coordY = parseInt((percentY - BOARD_OFFSET) / BOARD_SPACE + 0.5);
+    } else {
+      const bcr = event.target.getBoundingClientRect();
+      const x = event.targetTouches[0].clientX - bcr.x;
+      const y = event.targetTouches[0].clientY - bcr.y;
+
+      const percentX = (x * 100.0) / event.target.clientWidth;
+      const percentY = (y * 100.0) / event.target.clientHeight;
+      coordX = parseInt((percentX - BOARD_OFFSET) / BOARD_SPACE + 0.5);
+      coordY = parseInt((percentY - BOARD_OFFSET) / BOARD_SPACE - 1.5);
+    }
+
+    if (coordX < 0) coordX = 0;
+    if (coordY < 0) coordY = 0;
+
+    if (coordX > 18) coordX = 18;
+    if (coordY > 18) coordY = 18;
+
+    return {
+      x: coordX,
+      y: coordY,
+    };
+  }
+
+  const onMouseEnter = () => {
+    if (isMobile) return;
+    onBoardEnter();
+  };
+
+  const onMouseMove = (event) => {
+    if (isMobile) return;
+    onBoardMove(getCoord(event));
+  };
+
+  const onMouseLeave = () => {
+    if (isMobile) return;
+    console.log("MouseLeave");
+    onBoardLeave();
+  };
+
+  const onMouseClick = () => {
+    if (isMobile) return;
+    console.log("MouseClick");
+    onBoardSelect();
+  };
+
+  const onTouchStart = (event) => {
+    console.log("TouchStart");
+    if (!isMobile) return;
+    onBoardEnter();
+    onBoardMove(getCoord(event));
+  };
+
+  const onTouchMove = (event) => {
+    if (!isMobile) return;
+    onBoardMove(getCoord(event));
+  };
+
+  const onTouchEnd = (event) => {
+    if (!isMobile) return;
+    console.log("TouchEnd");
+    onBoardLeave();
+    onBoardSelect();
+  };
+
+  return (
+    <div
+      className="omokboard__coord"
+      onMouseEnter={onMouseEnter}
+      onMouseMove={onMouseMove}
+      onMouseLeave={onMouseLeave}
+      onClick={onMouseClick}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    ></div>
+  );
+};
+
 const OmokBoard = ({ takes }) => {
+  const [inBoard, setInBoard] = React.useState(false);
+  const [myTurn, setMyTurn] = React.useState(false);
+  const [coord, setCoord] = React.useState({});
+
+  React.useState(() => {
+    socket.on("player_select", () => {
+      setMyTurn(true);
+    });
+  }, []);
+
+  const handleBoardEnter = () => {
+    console.log("BoardEnter");
+    setInBoard(true);
+  };
+
+  const handleBoardLeave = () => {
+    console.log("BoardLeave");
+    setInBoard(false);
+  };
+
+  const handleBoardMove = (coord) => {
+    setCoord(coord);
+  };
+
+  const handleBoardSelect = () => {
+    setMyTurn(false);
+    console.log(`Select [${coord.x},${coord.y}]`);
+    socket.emit("player_selected", coord);
+  };
+
   return (
     <div className="omokboard">
+      {myTurn ? (
+        <CoordSelectArea
+          onBoardEnter={handleBoardEnter}
+          onBoardMove={handleBoardMove}
+          onBoardLeave={handleBoardLeave}
+          onBoardSelect={handleBoardSelect}
+        />
+      ) : null}
       {takes.map((takes, index) => (
         <MemoriedStone white={index % 2 == 1} x={takes.x} y={takes.y} />
       ))}
+      {myTurn && inBoard ? (
+        <MemoriedStone white={takes.length % 2 == 1} x={coord.x} y={coord.y} />
+      ) : null}
     </div>
   );
 };
@@ -160,6 +305,14 @@ const GamingRoom = ({ publicRoom }) => {
     socket.on("player_change", ({ blackPlayer, whitePlayer }) => {
       setBlackPlayer(blackPlayer);
       setWhitePlayer(whitePlayer);
+      setTakes([]);
+    });
+
+    socket.on("player_selected", (coord) => {
+      console.log(`player_selected [${coord.x},${coord.y}]`);
+      takes.push(coord);
+      const t = [...takes];
+      setTakes(t);
     });
   }, []);
 
