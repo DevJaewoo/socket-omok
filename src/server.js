@@ -221,6 +221,14 @@ wsServer.on("connection", (socket) => {
         if (room.blackPlayer === socket.id) room.blackPlayer = "";
         room.whitePlayer = socket.id;
       }
+    } else if (color === "spectator") {
+      if (room.blackPlayer === socket.id) {
+        room.blackPlayer = "";
+      } else if (room.whitePlayer === socket.id) {
+        room.whitePlayer = "";
+      } else {
+        return;
+      }
     }
 
     emitPlayerChange(room);

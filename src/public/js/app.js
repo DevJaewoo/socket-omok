@@ -342,6 +342,18 @@ const GamePanel = ({ roomname, blackPlayer, whitePlayer }) => {
       <div>
         <p className="game-panel__message">{message.map(MessageLine)}</p>
       </div>
+      <div class="game-panel__button">
+        <button onClick={() => socket.emit("player_change", "spectator")}>
+          관전하기
+        </button>
+        <button
+          onClick={() => {
+            socket.emit("room_leave");
+          }}
+        >
+          방 나가기
+        </button>
+      </div>
     </div>
   );
 };
@@ -376,13 +388,6 @@ const GamingRoom = ({ publicRoom }) => {
         blackPlayer={blackPlayer}
         whitePlayer={whitePlayer}
       />
-      <button
-        onClick={() => {
-          socket.emit("room_leave");
-        }}
-      >
-        방 나가기
-      </button>
     </div>
   );
 };
