@@ -69,6 +69,7 @@ const RoomList = ({ roomList }) => {
 
 const WaitingRoom = () => {
   const [roomList, setRoomList] = React.useState([]);
+  document.title = `대기실: 참가 가능한 방 ${roomList.length}개`;
   React.useEffect(() => {
     socket.on("room_list", (list) => {
       console.log(list);
@@ -384,6 +385,7 @@ const GamingRoom = ({ publicRoom }) => {
   const [winner, setWinner] = React.useState("");
 
   console.log(publicRoom);
+  document.title = `공개방: ${roomName}`;
 
   const onGameEnd = () => {
     setWinner("");
